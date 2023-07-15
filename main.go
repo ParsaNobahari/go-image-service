@@ -50,4 +50,18 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
+
+    for msg := range msgs {
+
+        url := string(msg.Body)
+        fmt.Println("Received URL:", url)
+
+        resp, err := http.Get(url)
+        if err != nil {
+            log.Println(err)
+            continue
+        }
+        defer resp.Body.Close()
+
+    }
 }
