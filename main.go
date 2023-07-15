@@ -63,5 +63,18 @@ func main() {
         }
         defer resp.Body.Close()
 
+        img, err := imaging.Decode(resp.Body)
+        if err != nil {
+            log.Println(err)
+            continue
+        }
+
+        compressedImg := imaging.Resize(img, 800, 0, imaging.Lanczos)
+
+        err = imaging.Save(compressedImg, "compressed.jpg")
+        if err != nil {
+            log.Println(err)
+            continue
+        }
     }
 }
