@@ -30,5 +30,6 @@ func main() {
         false,         // no-wait
         nil,           // arguments
         )
+    failOnError(err, "Failed to declare a queue")
 
 }
