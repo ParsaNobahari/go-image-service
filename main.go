@@ -1,9 +1,15 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    amqp "github.com/rabbitmq/amqp091-go"
+//	"bytes"
+	"fmt"
+//	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/disintegration/imaging"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func failOnError(err error, msg string) {
@@ -32,4 +38,16 @@ func main() {
         )
     failOnError(err, "Failed to declare a queue")
 
+    msgs, err := ch.Consume(
+        queue.Name, // queue name
+        "",         // consumer
+        true,       // auto-ack
+        false,      // exclusive
+        false,      // no-local
+        false,      // no-wait
+        nil,        // args
+        )
+    if err != nil {
+        log.Fatal(err)
+    }
 }
