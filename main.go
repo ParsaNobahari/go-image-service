@@ -22,4 +22,13 @@ func main() {
     failOnError(err, "Failed to open a channel")
     defer ch.Close()
 
+    queue, err := ch.QueueDeclare(
+        "image_queue", // queue name
+        true,          // durable
+        false,         // delete when unused
+        false,         // exclusive
+        false,         // no-wait
+        nil,           // arguments
+        )
+
 }
