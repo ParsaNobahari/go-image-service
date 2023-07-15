@@ -20,5 +20,6 @@
 # Go workspace file
 go.work
 
-# My note
+# My files
 *.txt
+main.go.old2
