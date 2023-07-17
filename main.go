@@ -6,7 +6,7 @@ import (
 //	"io"
 	"log"
 	"net/http"
-//	"os"
+	"os"
     "strings"
     "net/url"
 	"github.com/disintegration/imaging"
@@ -73,6 +73,11 @@ func main() {
         log.Fatal(err)
     }
 
+    if err := os.Mkdir("images", os.ModePerm);
+    err != nil {
+        log.Fatal(err)
+    }
+    
     for msg := range msgs {
 
         url := string(msg.Body)
@@ -98,7 +103,8 @@ func main() {
             log.Println(err)
         }
 
-        err = imaging.Save(compressedImg, after(string(name), "/"))
+        imageAndDirectoryName :=  "images/" + after(string(name), "/")
+        err = imaging.Save(compressedImg, imageAndDirectoryName)
         if err != nil {
             log.Println(err)
             continue
