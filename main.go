@@ -3,11 +3,12 @@ package main
 import (
 //	"bytes"
 	"fmt"
-//	"io/ioutil"
+//	"io"
 	"log"
 	"net/http"
-	"os"
-
+//	"os"
+    "strings"
+    "net/url"
 	"github.com/disintegration/imaging"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -16,6 +17,27 @@ func failOnError(err error, msg string) {
     if err != nil {
         log.Panicf("%s: %s", msg, err)
     }
+}
+
+func getPageName(URL string) (string, error) {
+    u, err := url.Parse(URL)
+    if err != nil {
+        return "", err
+    }
+    return u.Path[1:], nil
+}
+
+func after(value string, a string) string {
+    // Get substring after a string.
+    pos := strings.LastIndex(value, a)
+    if pos == -1 {
+        return ""
+    }
+    adjustedPos := pos + len(a)
+    if adjustedPos >= len(value) {
+        return ""
+    }
+    return value[adjustedPos:]
 }
 
 func main() {
@@ -71,7 +93,12 @@ func main() {
 
         compressedImg := imaging.Resize(img, 800, 0, imaging.Lanczos)
 
-        err = imaging.Save(compressedImg, "compressed.jpg")
+        name, err := getPageName(url)
+        if err != nil {
+            log.Println(err)
+        }
+
+        err = imaging.Save(compressedImg, after(string(name), "/"))
         if err != nil {
             log.Println(err)
             continue
