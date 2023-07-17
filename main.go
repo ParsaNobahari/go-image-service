@@ -28,7 +28,6 @@ func getPageName(URL string) (string, error) {
 }
 
 func after(value string, a string) string {
-    // Get substring after a string.
     pos := strings.LastIndex(value, a)
     if pos == -1 {
         return ""
@@ -42,6 +41,15 @@ func after(value string, a string) string {
 
 func main() {
 
+    if _, err := os.Stat("images"); err != nil {
+        if os.IsNotExist(err) {
+            if err := os.Mkdir("images", os.ModePerm);
+            err != nil {
+                log.Fatal(err)
+            }
+        }
+    }
+
     conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
     failOnError(err, "Failed to connect to RabbitMQ")
     defer conn.Close()
@@ -51,7 +59,7 @@ func main() {
     defer ch.Close()
 
     queue, err := ch.QueueDeclare(
-        "image_queue", // queue name
+        "image_queue", // name
         true,          // durable
         false,         // delete when unused
         false,         // exclusive
@@ -71,15 +79,6 @@ func main() {
         )
     if err != nil {
         log.Fatal(err)
-    }
-
-    if _, err := os.Stat("images"); err != nil {
-        if os.IsNotExist(err) {
-            if err := os.Mkdir("images", os.ModePerm);
-            err != nil {
-                log.Fatal(err)
-            }
-        }
     }
     
     for msg := range msgs {
