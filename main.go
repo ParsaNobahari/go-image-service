@@ -77,11 +77,11 @@ func main() {
         false,      // no-wait
         nil,        // args
         )
-    if err != nil {
-        log.Fatal(err)
-    }
-    
+    failOnError(err, "Failed to register a consumer")
+
     for msg := range msgs {
+
+        log.Printf("Received a message: %s", msg.Body)
 
         url := string(msg.Body)
         fmt.Println("Received URL:", url)
