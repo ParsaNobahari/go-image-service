@@ -73,9 +73,13 @@ func main() {
         log.Fatal(err)
     }
 
-    if err := os.Mkdir("images", os.ModePerm);
-    err != nil {
-        log.Fatal(err)
+    if _, err := os.Stat("images"); err != nil {
+        if os.IsNotExist(err) {
+            if err := os.Mkdir("images", os.ModePerm);
+            err != nil {
+                log.Fatal(err)
+            }
+        }
     }
     
     for msg := range msgs {
