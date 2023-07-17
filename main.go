@@ -1,16 +1,18 @@
 package main
 
 import (
-//	"bytes"
-	"fmt"
-//	"io"
-	"log"
-	"net/http"
-	"os"
+    //	"bytes"
+    "fmt"
+    //	"io"
+    "log"
+    "net/http"
+    "os"
     "strings"
     "net/url"
-	"github.com/disintegration/imaging"
-	amqp "github.com/rabbitmq/amqp091-go"
+    "time"
+    "context"
+    "github.com/disintegration/imaging"
+    amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func failOnError(err error, msg string) {
@@ -58,59 +60,79 @@ func main() {
     failOnError(err, "Failed to open a channel")
     defer ch.Close()
 
-    queue, err := ch.QueueDeclare(
-        "image_queue", // name
-        true,          // durable
-        false,         // delete when unused
-        false,         // exclusive
-        false,         // no-wait
-        nil,           // arguments
+    q, err := ch.QueueDeclare(
+        "hello", // name
+        false,   // durable
+        false,   // delete when unused
+        false,   // exclusive
+        false,   // no-wait
+        nil,     // arguments
         )
     failOnError(err, "Failed to declare a queue")
 
     msgs, err := ch.Consume(
-        queue.Name, // queue name
-        "",         // consumer
-        true,       // auto-ack
-        false,      // exclusive
-        false,      // no-local
-        false,      // no-wait
-        nil,        // args
+        q.Name, // queue
+        "",     // consumer
+        true,   // auto-ack
+        false,  // exclusive
+        false,  // no-local
+        false,  // no-wait
+        nil,    // args
         )
     failOnError(err, "Failed to register a consumer")
 
-    for msg := range msgs {
+    var forever chan struct{}
 
-        log.Printf("Received a message: %s", msg.Body)
+    go func() {
+        for msg := range msgs {
 
-        url := string(msg.Body)
-        fmt.Println("Received URL:", url)
+            url := string(msg.Body)
+            fmt.Println("Received URL:", url)
 
-        resp, err := http.Get(url)
-        if err != nil {
-            log.Println(err)
-            continue
+            resp, err := http.Get(url)
+            if err != nil {
+                log.Println(err)
+                continue
+            }
+            defer resp.Body.Close()
+
+            img, err := imaging.Decode(resp.Body)
+            if err != nil {
+                log.Println(err)
+                continue
+            }
+
+            compressedImg := imaging.Resize(img, 800, 0, imaging.Lanczos)
+
+            name, err := getPageName(url)
+            if err != nil {
+                log.Println(err)
+            }
+
+            imageAndDirectoryName :=  "images/" + after(string(name), "/")
+
+            err = imaging.Save(compressedImg, imageAndDirectoryName)
+            if err != nil {
+                log.Println(err)
+                continue
+            }
+
+            ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+            defer cancel()
+
+            err = ch.PublishWithContext(ctx,
+                "",     // exchange
+                q.Name, // routing key
+                false,  // mandatory
+                false,  // immediate
+                amqp.Publishing {
+                    ContentType: "text/plain",
+                    Body:        []byte(imageAndDirectoryName),
+                })
+            failOnError(err, "Failed to publish a message")
         }
-        defer resp.Body.Close()
+    }()
 
-        img, err := imaging.Decode(resp.Body)
-        if err != nil {
-            log.Println(err)
-            continue
-        }
-
-        compressedImg := imaging.Resize(img, 800, 0, imaging.Lanczos)
-
-        name, err := getPageName(url)
-        if err != nil {
-            log.Println(err)
-        }
-
-        imageAndDirectoryName :=  "images/" + after(string(name), "/")
-        err = imaging.Save(compressedImg, imageAndDirectoryName)
-        if err != nil {
-            log.Println(err)
-            continue
-        }
-    }
+    log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+    <-forever
 }
