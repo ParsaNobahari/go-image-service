@@ -1,12 +1,11 @@
 package main
 
 import (
-    //	"bytes"
     "fmt"
-    //	"io"
     "log"
     "net/http"
     "os"
+    "github.com/google/uuid"
     "strings"
     "net/url"
     "time"
@@ -29,7 +28,7 @@ func getPageName(URL string) (string, error) {
     return u.Path[1:], nil
 }
 
-func after(value string, a string) string {
+func lastStringAfterSlash(value string, a string) string {
     pos := strings.LastIndex(value, a)
     if pos == -1 {
         return ""
@@ -42,6 +41,8 @@ func after(value string, a string) string {
 }
 
 func main() {
+
+    var uuids []string
 
     if _, err := os.Stat("images"); err != nil {
         if os.IsNotExist(err) {
@@ -84,7 +85,25 @@ func main() {
     var forever chan struct{}
 
     go func() {
+
+        out:
         for msg := range msgs {
+
+            senderUUID := uuid.New().String()
+
+            fmt.Println("created new UUID")
+            if uuids != nil {
+                if uuids[len(uuids)-1] == msg.Headers["uuid"] {
+                    fmt.Println("duplicated detected, ignoring")
+                    continue out
+                } else {
+                    uuids = append(uuids, senderUUID)
+                    fmt.Println("new UUID has been added")
+                }
+            } else {
+                uuids = append(uuids, senderUUID)
+                fmt.Println("first UUID added")
+            }
 
             url := string(msg.Body)
             fmt.Println("Received URL:", url)
@@ -96,20 +115,20 @@ func main() {
             }
             defer resp.Body.Close()
 
-            img, err := imaging.Decode(resp.Body)
+            decodedImg, err := imaging.Decode(resp.Body)
             if err != nil {
                 log.Println(err)
                 continue
             }
 
-            compressedImg := imaging.Resize(img, 800, 0, imaging.Lanczos)
+            compressedImg := imaging.Resize(decodedImg, 800, 0, imaging.Lanczos)
 
-            name, err := getPageName(url)
+            imageName, err := getPageName(url)
             if err != nil {
                 log.Println(err)
             }
 
-            imageAndDirectoryName :=  "images/" + after(string(name), "/")
+            imageAndDirectoryName :=  "images/" + lastStringAfterSlash(string(imageName), "/")
 
             err = imaging.Save(compressedImg, imageAndDirectoryName)
             if err != nil {
@@ -128,6 +147,9 @@ func main() {
                 amqp.Publishing {
                     ContentType: "text/plain",
                     Body:        []byte(imageAndDirectoryName),
+                    Headers:     amqp.Table{
+                        "uuid": uuids[len(uuids)-1],
+                    },
                 })
             failOnError(err, "Failed to publish a message")
         }
