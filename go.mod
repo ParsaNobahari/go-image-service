@@ -1,4 +1,4 @@
-module github.com/rabbitmq/amqp091-go/latest
+module imageservice
 
 go 1.20
 
