@@ -4,12 +4,16 @@
 
 #### Run RabbitMQ Server
 
-    docker run -d --hostname my-rabbit --name some-rabbit -p 15672:15672 -p 5672:5672 rabbitmq:3-management
+    docker run -d --hostname rabbitmq-server --name image-service -p 15672:15672 -p 5672:5672 rabbitmq:3-management .
 
-#### Run Image Service using Dockerfile
+#### Build Docker Image
 
-    docker 
+    docker build -t image-service .
 
-#### Run Test File
+#### Run Image Service
+
+    docker run -p 5672:5672 image-service
+
+#### Run Test
 
     go test
