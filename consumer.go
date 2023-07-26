@@ -1,13 +1,19 @@
 package main
 
 import (
+    "os"
     "log"
-    "sync"
     "fmt"
+    "sync"
     "imageservice/modules"
     "imageservice/producer"
     amqp "github.com/rabbitmq/amqp091-go"
 )
+
+var rabbit_host = os.Getenv("RABBIT_HOST")
+var rabbit_port = os.Getenv("RABBIT_PORT")
+var rabbit_user = os.Getenv("RABBIT_USER")
+var rabbit_password = os.Getenv("RABBIT_PASSWORD")
 
 func failOnError(err error, msg string) {
     if err != nil {
@@ -18,11 +24,10 @@ func failOnError(err error, msg string) {
 func main() {
 
     modules.CreateNewDirectory()
-    modules.CreateNewTextFile()
 
     var wg sync.WaitGroup
 
-    conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+    conn, err := amqp.Dial("amqp://" + rabbit_user + ":" + rabbit_password + "@" + rabbit_host + ":" + rabbit_port + "/")
     failOnError(err, "Failed to connect to RabbitMQ")
     defer conn.Close()
 

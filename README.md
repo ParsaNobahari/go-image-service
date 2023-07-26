@@ -1,19 +1,35 @@
-## Go Image Service with RabbitMQ
+# Go Image Service with RabbitMQ
 
-### Usage
+## Usage
 
-#### Run RabbitMQ Server
+### Run Local Docker Network
 
-    docker run -d --hostname rabbitmq-server --name image-service -p 15672:15672 -p 5672:5672 rabbitmq:3-management .
+    docker network create rabbits
 
-#### Build Docker Image
+### Run RabbitMQ in Docker
+
+    docker run -d --rm --net rabbits -p 8080:15672 --hostname rabbit-1 --name image-service rabbitmq:3.8
+
+**note**: if you cannot access rabbitmq management, try this:
+
+#### Enable rabbitmq management
+
+    exec -it rabbit-1 bash
+    rabbitmq-plugins enable rabbitmq_maangement
+
+to check if this worked you can simply try:
+> rabbitmq-plugins list 
+
+if _rabbitmq_web_dispatch_, _rabbitmq_management_ and _rabbitmq_management_agent_ didn't get enabled, DIY.
+
+### Build Docker Image
 
     docker build -t image-service .
 
-#### Run Image Service
+### Run Image Service
 
     docker run -p 5672:5672 image-service
 
-#### Run Test
+### To Run Test Locally
 
     go test

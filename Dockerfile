@@ -1,7 +1,10 @@
-FROM golang:latest
+FROM golang:latest-alpine as build
+
+# Installing Git
+RUN apk add --no-cache git
 
 # Set the Current Working Directory inside the container
-WORKDIR $GOPATH/src/image-service
+WORKDIR $GOPATH/src
 
 # Copy everything from the current directory to the PWD (Present Working Directory) inside the container
 COPY . .
@@ -12,8 +15,14 @@ RUN go get -d -v ./...
 # Install the package
 RUN go install -v ./...
 
-# This container exposes port 5672 to the outside world
-EXPOSE 5672 15672
+# Build the code
+RUN go build consumer.go
+
+# Create Docker container for application
+FROM alpine as runtime
+
+# Copy the executable to app folder
+COPY --from=build $GOPATH/src/consumer $GOPATH/app/image-service
 
 # Run the executable
-CMD ["image-service"]
+CMD ["$GOPATH/app/image-service"]

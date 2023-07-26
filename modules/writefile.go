@@ -15,15 +15,3 @@ func CreateNewDirectory() {
         }
     }
 }
-
-func CreateNewTextFile() {
-        if _, err := os.Stat("urls.txt"); err != nil {
-        if os.IsNotExist(err) {
-            f, err := os.Create("urls.txt");
-            if err != nil {
-                log.Fatal(err)
-            }
-            defer f.Close()
-        }
-    }
-}
