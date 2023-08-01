@@ -61,10 +61,12 @@ func main() {
         defer wg.Done()
         for msg := range msgs {
             url := string(msg.Body)
-            fmt.Println("Received URL:", url)
+            if(url[0:7] != "images/") {
+                fmt.Println("Received URL:", url)
 
-            wg.Add(1)
-            go producer.DownloadAndCompressImage(url, &wg, ch, q)
+                wg.Add(1)
+                go producer.DownloadAndCompressImage(url, &wg, ch, q)
+            }
         }
     }()
 
